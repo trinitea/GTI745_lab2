@@ -2,7 +2,6 @@
 
 	Properties{
 		_MainTex("Color (RGB)", 2D) = "white"
-		_AlphaTex("Color (RGB)", 2D) = "white"
 	}
 
 		SubShader{
@@ -20,18 +19,25 @@
 
 	struct Input {
 		float2 uv_MainTex;
-		float2 uv_AlphaTex;
 	};
 
 	sampler2D _MainTex;
-	sampler2D _AlphaTex;
 
 	void surf(Input IN, inout SurfaceOutput o) {
-		o.Albedo = tex2D(_MainTex, IN.uv_MainTex).rgb;
-		o.Alpha = tex2D(_AlphaTex, IN.uv_AlphaTex).rgb;
+		o.Emission = tex2D(_MainTex, IN.uv_MainTex).rgb;
+
+
+
+		if (IN.uv_MainTex.y < 0.5) {
+			o.Alpha = 0;
+		}
+		else {
+			o.Alpha = tex2D(_MainTex, float2(IN.uv_MainTex.x, IN.uv_MainTex.y - 0.5)).rgb;
+		}
+		//o.Alpha = tex2D(_MainTex, float2(IN.uv_MainTex.x, IN.uv_MainTex.y-0.5)).rgb; 
 	}
 
 	ENDCG
 	}
 
-}
+}﻿

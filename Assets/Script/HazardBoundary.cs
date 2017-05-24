@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class HazardBoundary : MonoBehaviour
 {
-    
     void OnTriggerExit(Collider other)
     {
         Destroy(other.gameObject);
