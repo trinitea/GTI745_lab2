@@ -44,12 +44,12 @@ public class PlayerController : MonoBehaviour {
     private Projectile laserProjectile;
 
     // Super Weapon
-    private float superWeaponRecharge = 1.0f;
+    private float superWeaponPowerLevel;
     private float superWeaponRechargeMax = 100.0f;
     private float superWeaponCost = 100.0f;
 
     [SerializeField]
-    private float superWeaponRechargeRate;
+    private float superWeaponRechargeRate = 1.0f;
     [SerializeField]
     private float superWeaponRechargePerKill;
     [SerializeField]
@@ -63,6 +63,8 @@ public class PlayerController : MonoBehaviour {
 
         mainWeaponCanShoot = true;
         mainWeaponCooldown = 0.0f;
+
+        superWeaponPowerLevel = 0.0f;
 
         currentShipIndex = 3;
 
@@ -102,9 +104,9 @@ public class PlayerController : MonoBehaviour {
         }
 
         // Update super weapon recharge
-        if (superWeaponRecharge < superWeaponRechargeMax)
+        if (superWeaponPowerLevel < superWeaponRechargeMax)
         {
-            superWeaponRecharge = Mathf.Min(superWeaponRecharge + superWeaponRechargeRate * Time.deltaTime);
+            superWeaponPowerLevel = Mathf.Min(superWeaponPowerLevel + superWeaponRechargeRate * Time.deltaTime, superWeaponRechargeMax);
         }
 
         if (Input.GetButton("Fire1"))
@@ -166,12 +168,13 @@ public class PlayerController : MonoBehaviour {
 
     private void FireSuper()
     {
-        /*
-        if (!mainWeaponCanShoot || currentShip == null)
+        
+        if (superWeaponPowerLevel < superWeaponCost)
         {
             return;
         }
-        */
+
+        superWeaponPowerLevel -= superWeaponCost;
         superWeaponAnimation.Play();
     }
 }
