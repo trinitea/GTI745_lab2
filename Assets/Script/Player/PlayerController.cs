@@ -1,6 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 [System.Serializable]
 public class ShipComponent
@@ -16,17 +18,9 @@ public class Boundary
 
 
 // Mix between player pawn and player controller
-public class PlayerController : MonoBehaviour {
+public class PlayerController : MonoBehaviour, IDamagable {
 
-    [SerializeField]
-    private float speed;
-
-    [SerializeField]
-    private float tilt;
-
-    [SerializeField]
-    private float timeBetweenShot = 0.75f;
-
+    // Ship
     private Rigidbody myRigidbody;
 
     public Boundary boundary;
@@ -36,24 +30,47 @@ public class PlayerController : MonoBehaviour {
     private Ship currentShip;
     private MeshFilter meshFilter;
 
+    [SerializeField]
+    private ParticleScript explosion;
+
+    [SerializeField]
+    private Image healthBar;
+
+    // Movement
+    [SerializeField]
+    private float speed;
+
+    [SerializeField]
+    private float tilt;
+
     // Main Weapon 1
     private bool mainWeaponCanShoot = true;
     private float mainWeaponCooldown;
+    
+    [SerializeField]
+    private float timeBetweenShot = 0.75f;
 
     [SerializeField]
     private Projectile laserProjectile;
 
+    [SerializeField]
+    private AudioSource mainWeaponSound; // since we have just one audio clip
+
+
+
     // Super Weapon
     private float superWeaponPowerLevel;
-    private float superWeaponRechargeMax = 100.0f;
-    private float superWeaponCost = 100.0f;
+    private float superWeaponPowerMax = 100.0f;
+    private float superWeaponCost = 0.0f;
 
     [SerializeField]
     private float superWeaponRechargeRate = 1.0f;
     [SerializeField]
     private float superWeaponRechargePerKill;
     [SerializeField]
-    private UnityEngine.Video.VideoPlayer superWeaponAnimation;
+    private SuperWeapon superWeapon;
+    [SerializeField]
+    private Image superWeaponBar;
 
     // Use this for initialization
     void Start ()
@@ -66,7 +83,7 @@ public class PlayerController : MonoBehaviour {
 
         superWeaponPowerLevel = 0.0f;
 
-        currentShipIndex = 3;
+        currentShipIndex = 0;
 
         Spawn();
     }
@@ -104,9 +121,9 @@ public class PlayerController : MonoBehaviour {
         }
 
         // Update super weapon recharge
-        if (superWeaponPowerLevel < superWeaponRechargeMax)
+        if (superWeaponPowerLevel < superWeaponPowerMax)
         {
-            superWeaponPowerLevel = Mathf.Min(superWeaponPowerLevel + superWeaponRechargeRate * Time.deltaTime, superWeaponRechargeMax);
+            superWeaponPowerLevel = Mathf.Min(superWeaponPowerLevel + superWeaponRechargeRate * Time.deltaTime, superWeaponPowerMax);
         }
 
         if (Input.GetButton("Fire1"))
@@ -118,6 +135,10 @@ public class PlayerController : MonoBehaviour {
         {
             FireSuper();
         }
+
+        // UpdateUi
+        //HealthBar.fillAmount = health / maxHealth 
+        superWeaponBar.fillAmount = superWeaponPowerLevel / superWeaponPowerMax;
     }
 
     public void Upgrade()
@@ -135,7 +156,7 @@ public class PlayerController : MonoBehaviour {
     {
         if(currentShip != null)
         {
-            Destroy(currentShip);
+            Destroy(currentShip.gameObject);
         }
 
         if(shipComponent.ships.Count > currentShipIndex)
@@ -162,19 +183,56 @@ public class PlayerController : MonoBehaviour {
                 );
         }
 
+        mainWeaponSound.Play();
+
         mainWeaponCanShoot = false;
         mainWeaponCooldown = timeBetweenShot;
     }
 
     private void FireSuper()
     {
-        
         if (superWeaponPowerLevel < superWeaponCost)
         {
             return;
         }
 
+        StartCoroutine(ExecuteEverithingOnScreen());
+
         superWeaponPowerLevel -= superWeaponCost;
-        superWeaponAnimation.Play();
+
+        superWeapon.Fire();
+    }
+
+    private IEnumerator ExecuteEverithingOnScreen()
+    {
+        IDamagable damagable;
+        
+        yield return new WaitForSeconds(0.35f);
+
+        for (int i = 0; i < 3; i ++)
+        {
+            
+            foreach (GameObject obj in GameObject.FindGameObjectsWithTag("Hazard"))
+            {
+                damagable = (IDamagable) obj.GetComponent(typeof(IDamagable));
+                if (damagable != null)
+                    damagable.ReceiveDamage(3.0f);
+            }
+
+            yield return new WaitForSeconds(0.8f);
+        }
+    }
+
+    public void ReceiveDamage(float damage)
+    {
+        // Explode
+        // TODO: implement state for the state machine
+        if(currentShip == null)
+        {
+            return;
+        }
+
+        Destroy(currentShip.gameObject);
+        Instantiate(explosion, transform.position, transform.rotation);
     }
 }
