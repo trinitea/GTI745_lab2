@@ -4,6 +4,6 @@ using UnityEngine;
 
 public class Ship : MonoBehaviour
 {
-    public string name;
+    public string shipName;
     public List<GameObject> HardPoints;
 }
