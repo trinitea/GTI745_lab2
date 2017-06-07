@@ -16,6 +16,13 @@ public class Boundary
     public float XMin, XMax, ZMin, ZMax;
 }
 
+public enum PlayerState
+{
+
+    Dead,
+    Spawning,
+    Alive
+}
 
 // Mix between player pawn and player controller
 public class PlayerController : MonoBehaviour, IDamagable {
@@ -36,6 +43,14 @@ public class PlayerController : MonoBehaviour, IDamagable {
     [SerializeField]
     private Image healthBar;
 
+    [SerializeField]
+    private float maxHealth;
+
+    private float health;
+
+    private float spawningDuration;
+    private PlayerState playerState;
+
     // Movement
     [SerializeField]
     private float speed;
@@ -55,8 +70,6 @@ public class PlayerController : MonoBehaviour, IDamagable {
 
     [SerializeField]
     private AudioSource mainWeaponSound; // since we have just one audio clip
-
-
 
     // Super Weapon
     private float superWeaponPowerLevel;
@@ -85,7 +98,7 @@ public class PlayerController : MonoBehaviour, IDamagable {
 
         currentShipIndex = 0;
 
-        Spawn();
+        ChangePlayerState(PlayerState.Spawning); 
     }
 	
     void FixedUpdate()
@@ -126,6 +139,12 @@ public class PlayerController : MonoBehaviour, IDamagable {
             superWeaponPowerLevel = Mathf.Min(superWeaponPowerLevel + superWeaponRechargeRate * Time.deltaTime, superWeaponPowerMax);
         }
 
+        if(spawningDuration > 0)
+        {
+            spawningDuration -= Time.deltaTime;
+            if (spawningDuration <= 0) playerState = PlayerState.Alive; 
+        }
+
         if (Input.GetButton("Fire1"))
         {
             FireMain();
@@ -163,6 +182,38 @@ public class PlayerController : MonoBehaviour, IDamagable {
         {
             currentShip = Instantiate(shipComponent.ships[currentShipIndex], transform);
         }
+    }
+
+    private void ChangePlayerState(PlayerState state)
+    {
+        if (playerState == state) return;
+
+        switch(state)
+        {
+            case PlayerState.Spawning:
+                transform.position = new Vector3(); // put back at origin or put a player spawn object on the scene
+                spawningDuration = 3.0f;
+                health = maxHealth;
+                GetComponent<MeshCollider>().enabled = true;
+                Spawn();
+                break;
+
+            case PlayerState.Alive:
+                break;
+
+            case PlayerState.Dead:
+                Destroy(currentShip.gameObject);
+                Instantiate(explosion, transform.position, transform.rotation);
+
+                // Disable colision
+                GetComponent<MeshCollider>().enabled = false;
+
+                GameObject.FindGameObjectWithTag("GameController").GetComponent<GameController>().OnGameOver();
+
+                break;
+        }
+
+        playerState = state;
     }
 
     private void FireMain()
@@ -226,13 +277,12 @@ public class PlayerController : MonoBehaviour, IDamagable {
     public void ReceiveDamage(float damage)
     {
         // Explode
-        // TODO: implement state for the state machine
-        if(currentShip == null)
+        if(currentShip == null || playerState != PlayerState.Alive)
         {
             return;
         }
 
-        Destroy(currentShip.gameObject);
-        Instantiate(explosion, transform.position, transform.rotation);
+        health -= damage;
+        if (health <= 0) ChangePlayerState(PlayerState.Dead);
     }
 }

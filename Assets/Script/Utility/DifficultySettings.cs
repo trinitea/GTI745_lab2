@@ -41,7 +41,7 @@ public class DifficultySettings : MonoBehaviour {
         bossTimeBeforSpawn = bossTimer;
     }
 
-    static DifficultySettings getSettings(Difficulty difficulty)
+    static public DifficultySettings getSettings(Difficulty difficulty)
     {
         DifficultySettings settings = null;
 
