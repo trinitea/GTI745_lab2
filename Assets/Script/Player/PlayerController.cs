@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Events;
 using CnControls;
 
 [System.Serializable]
@@ -20,7 +19,6 @@ public class Boundary
 
 public enum PlayerState
 {
-
     Dead,
     Spawning,
     Alive
@@ -234,12 +232,12 @@ public class PlayerController : MonoBehaviour, IDamagable {
             if (spawningDuration <= 0) playerState = PlayerState.Alive; 
         }
 
-        if (Input.GetButton("Fire1") && inputControler != InputControler.VIRTUAL_JOYSTICK)
+        if (Input.GetButton("Fire1")/* && inputControler != InputControler.VIRTUAL_JOYSTICK*/)
         {
             FireMain();
         }
 
-		if (Input.GetButtonDown("Fire2") && inputControler != InputControler.VIRTUAL_JOYSTICK)
+		if (Input.GetButtonDown("Fire2")/* && inputControler != InputControler.VIRTUAL_JOYSTICK*/)
         {
             FireSuper();
         }
@@ -257,10 +255,10 @@ public class PlayerController : MonoBehaviour, IDamagable {
         }
 
         currentShipIndex++;
-        Spawn();
+        SpawnShip();
     }
 
-    public void Spawn()
+    public void SpawnShip()
     {
         if(currentShip != null)
         {
@@ -273,6 +271,11 @@ public class PlayerController : MonoBehaviour, IDamagable {
         }
     }
 
+    public void Respawn()
+    {
+        ChangePlayerState(PlayerState.Spawning);
+    }
+
     private void ChangePlayerState(PlayerState state)
     {
         if (playerState == state) return;
@@ -280,11 +283,11 @@ public class PlayerController : MonoBehaviour, IDamagable {
         switch(state)
         {
             case PlayerState.Spawning:
-                transform.position = new Vector3(); // put back at origin or put a player spawn object on the scene
+                transform.position = new Vector3(0.0f, 0.0f, 2.0f); // put back at origin or put a player spawn object on the scene
                 spawningDuration = 3.0f;
                 health = maxHealth;
                 GetComponent<MeshCollider>().enabled = true;
-                Spawn();
+                SpawnShip();
                 break;
 
             case PlayerState.Alive:
@@ -307,7 +310,6 @@ public class PlayerController : MonoBehaviour, IDamagable {
     
     public void FireMain()
     {
-        Debug.Log("Fire main (mainWeaponCanShoot = " + mainWeaponCanShoot);
         if(!mainWeaponCanShoot || currentShip == null)
         {
             return;
@@ -330,7 +332,7 @@ public class PlayerController : MonoBehaviour, IDamagable {
         mainWeaponCooldown = timeBetweenShot;
     }
 
-    private void FireSuper()
+    public void FireSuper()
     {
         if (superWeaponPowerLevel < superWeaponCost)
         {

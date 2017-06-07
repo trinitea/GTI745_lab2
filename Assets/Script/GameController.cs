@@ -57,10 +57,7 @@ public class GameController : MonoBehaviour {
     {
         difficultySettings = DifficultySettings.getSettings(GameModel.gameDifficulty);
         gameScore = 0;
-
-        // startSpawn
-        if (difficultySettings.asteroidShouldSpawn) StartCoroutine("AsteroidSpawnWaves");
-        if (difficultySettings.enemyShipShouldSpawn) StartCoroutine("EnemyShipSpawnWaves");
+        startSpawn();
     }
 
     /*
@@ -69,6 +66,11 @@ public class GameController : MonoBehaviour {
 
     }
     */
+    private void startSpawn()
+    {
+        if (difficultySettings.asteroidShouldSpawn) StartCoroutine("AsteroidSpawnWaves");
+        if (difficultySettings.enemyShipShouldSpawn) StartCoroutine("EnemyShipSpawnWaves");
+    }
 
     public IEnumerator AsteroidSpawnWaves()
     {
@@ -138,6 +140,22 @@ public class GameController : MonoBehaviour {
 
     private void OnGameOverCallback(bool restart)
     {
+        if(restart)
+        {
+            foreach (GameObject obj in GameObject.FindGameObjectsWithTag("Hazard"))
+            {
+                Destroy(obj);
+            }
 
+            gameScore = 0;
+            textScore.text = gameScore.ToString();
+
+            GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>().Respawn(); ;
+        }
+        else
+        {
+            // load
+        }
+        
     }
 }
