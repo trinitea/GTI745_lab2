@@ -31,21 +31,28 @@ public class GameController : MonoBehaviour {
     [SerializeField]
     private float asteroidTimeBetweenSpawn = 1.0f;
     [SerializeField]
-    private int asteroidNumberPerSpawn = 15;
+    private int asteroidNumberPerSpawn = 30;
 
     [SerializeField]
-    private float ennemyShipTimeBetweenSpawn = 1.0f;
+    private float enemyShipTimeBetweenSpawn = 3.0f;
     [SerializeField]
-    private float ennemyShipNumberPerSpawn = 1.0f;
+    private int enemyShipNumberPerSpawn = 10;
 
     private DifficultySettings difficultySettings;
     private GameState gameState;
     // Use this for initialization
+
+    public DialogHelper dialogHelper;
+
     void Start ()
     {
+        difficultySettings = DifficultySettings.getSettings(GameModel.gameDifficulty);
         gameScore = 0;
-        StartCoroutine(AsteroidSpawnWaves());
-	}
+
+        // startSpawn
+        if (difficultySettings.asteroidShouldSpawn) StartCoroutine("AsteroidSpawnWaves");
+        if (difficultySettings.enemyShipShouldSpawn) StartCoroutine("EnemyShipSpawnWaves");
+    }
 
     /*
     void Update()
@@ -56,30 +63,31 @@ public class GameController : MonoBehaviour {
 
     public IEnumerator AsteroidSpawnWaves()
     {
-        for(;;)
+        for (;;)
         {
-            for (int i = 0; i < asteroidNumberPerSpawn; i++)
+            yield return new WaitForSeconds(3.0f);
+
+            for (int i = 0; i < asteroidNumberPerSpawn * difficultySettings.asteroidSpawnMultiplier; i++)
             {
                 Instantiate(hazard, GenerateSpawnPosition(), Quaternion.identity);
-                yield return new WaitForSeconds(asteroidTimeBetweenSpawn);
+                yield return new WaitForSeconds(asteroidTimeBetweenSpawn * difficultySettings.asteroidSpawnTimeMultiplier);
             }
         }
-
-        // NextWave();
     }
 
-    public IEnumerator EnnemyShipSpawnWaves()
+    public IEnumerator EnemyShipSpawnWaves()
     {
         for (;;)
         {
-            for (int i = 0; i < ennemyShipNumberPerSpawn; i++)
+
+            yield return new WaitForSeconds(3.0f);
+
+            for (int i = 0; i < enemyShipNumberPerSpawn * difficultySettings.enemyShipSpawnMultiplier; i++)
             {
                 Instantiate(hazard, GenerateSpawnPosition(), Quaternion.identity);
-                yield return new WaitForSeconds(ennemyShipTimeBetweenSpawn);
+                yield return new WaitForSeconds(enemyShipTimeBetweenSpawn * difficultySettings.asteroidSpawnTimeMultiplier);
             }
         }
-
-        // NextWave();
     }
 
     private Vector3 GenerateSpawnPosition()
@@ -97,5 +105,30 @@ public class GameController : MonoBehaviour {
     {
         gameScore += points;
         textScore.text = gameScore.ToString();
+    }
+
+    public void OnGameOver()
+    {
+        StartCoroutine("GameOverProcess");
+
+        StopCoroutine("AsteroidSpawnWaves");
+        StopCoroutine("EnemyShipSpawnWaves");
+
+        Invoke("DialogHelper.ShowGameOverDialog(OnGameOverCallback)", 2);
+    }
+
+    IEnumerator GameOverProcess()
+    {
+        StopCoroutine("AsteroidSpawnWaves");
+        StopCoroutine("EnemyShipSpawnWaves");
+
+        yield return new WaitForSeconds(2f);
+
+        dialogHelper.ShowGameOverDialog(OnGameOverCallback);
+    }
+
+    private void OnGameOverCallback(bool restart)
+    {
+
     }
 }
