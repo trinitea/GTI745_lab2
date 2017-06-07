@@ -274,6 +274,11 @@ public class PlayerController : MonoBehaviour, IDamagable {
         }
     }
 
+    public Team GetTeam()
+    {
+        return Team.Player; // Should not be static but ok for now
+    }
+
     public void ReceiveDamage(float damage)
     {
         // Explode
