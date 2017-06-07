@@ -14,14 +14,17 @@ public class DestroyByContact : MonoBehaviour, IDamagable {
             return;
         }
 
-        if (other.tag == "Player")
+        IDamagable damageReceiver = (IDamagable)other.GetComponent(typeof(IDamagable));
+
+        if (damageReceiver != null && damageReceiver.GetTeam() != Team.Enemy)
         {
-            ( (IDamagable)other.GetComponent(typeof(IDamagable)) ).ReceiveDamage(1.0f);
+            damageReceiver.ReceiveDamage(1.0f);
         }
-        else
-        {
-            ReceiveDamage(1.0f); // for now self inflict damage
-        }
+    }
+
+    public Team GetTeam()
+    {
+        return Team.Enemy;
     }
 
     public void ReceiveDamage(float damage)
