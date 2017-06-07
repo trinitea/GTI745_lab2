@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
+using CnControls;
 
 [System.Serializable]
 public class ShipComponent
@@ -36,9 +38,20 @@ public class PlayerController : MonoBehaviour, IDamagable {
     [SerializeField]
     private Image healthBar;
 
+    private Boolean gameover = false;
+
     // Movement
     [SerializeField]
-    private float speed;
+    private InputControler inputControler;
+
+	// For accelerometer calibration
+	private float yatstart = 0;
+	private float xatstart = 0;
+
+    [SerializeField]
+    private float speed = 10;
+	[SerializeField]
+	private float speedAccelometer = 25;
 
     [SerializeField]
     private float tilt;
@@ -56,8 +69,6 @@ public class PlayerController : MonoBehaviour, IDamagable {
     [SerializeField]
     private AudioSource mainWeaponSound; // since we have just one audio clip
 
-
-
     // Super Weapon
     private float superWeaponPowerLevel;
     private float superWeaponPowerMax = 100.0f;
@@ -72,28 +83,73 @@ public class PlayerController : MonoBehaviour, IDamagable {
     [SerializeField]
     private Image superWeaponBar;
 
+    // Virtual Controler 5stick + button)
+    [SerializeField]
+    private GameObject virtualJoystick;
+    [SerializeField]
+    private GameObject virtualShootButton;
+
+
     // Use this for initialization
     void Start ()
     {
+		calibAcelerometer();
         myRigidbody = GetComponent<Rigidbody>();
         meshFilter = GetComponent<MeshFilter>();
 
         mainWeaponCanShoot = true;
         mainWeaponCooldown = 0.0f;
 
+		SetControler(InputControler.VIRTUAL_JOYSTICK);
         superWeaponPowerLevel = 0.0f;
 
         currentShipIndex = 0;
 
         Spawn();
     }
-	
+
+    private void SetControler(InputControler newInputControler)
+    {
+        inputControler = newInputControler;
+
+        switch (inputControler)
+        {
+            case InputControler.VIRTUAL_JOYSTICK:
+                virtualJoystick.SetActive(true);
+                virtualShootButton.SetActive(true);
+                break;
+            case InputControler.PAD:
+            case InputControler.ACCELEROMETER:
+                virtualJoystick.SetActive(false);
+                virtualShootButton.SetActive(false);
+                break;
+            default:
+                Debug.Log("Input controler is unknow : " + inputControler);
+                break;
+        }
+    }
+
+
     void FixedUpdate()
     {
-        float horizontalMovement = Input.GetAxis("Horizontal");
-        float verticalMovement = Input.GetAxis("Vertical");
-        
-        GetComponent<Rigidbody>().velocity = new Vector3(horizontalMovement, 0.0f, verticalMovement) * speed;
+        // dont play if gameover
+        if (gameover)
+        {
+            return;
+        }
+
+        float horizontalMovement = getVerticalMovement(inputControler);
+        float verticalMovement = getHorizontalMovement(inputControler);
+
+		if (inputControler == InputControler.ACCELEROMETER){
+			Debug.Log ("true");
+		} else {
+			Debug.Log ("false");
+		}
+
+		float speedToApply = inputControler == InputControler.ACCELEROMETER ? speedAccelometer : speed;
+		Debug.Log ("Input selected = " + inputControler + " Speed to apply = " + speedToApply);
+		GetComponent<Rigidbody>().velocity = new Vector3(horizontalMovement, 0.0f, verticalMovement) * speedToApply;
 
         GetComponent<Rigidbody>().position = new Vector3
         (
@@ -107,11 +163,56 @@ public class PlayerController : MonoBehaviour, IDamagable {
         GetComponent<Rigidbody>().rotation = Quaternion.Euler(0.0f, 0.0f, GetComponent<Rigidbody>().velocity.x * -tilt);
     }
 
-	// Update is called once per frame
-	void Update ()
+    // Get the verticcal movement value from controler
+    private float getVerticalMovement(InputControler inputControler)
     {
+        switch (inputControler)
+        {
+            case InputControler.PAD:
+                return Input.GetAxis("Vertical");
+            case InputControler.ACCELEROMETER:
+				return Input.acceleration.x - xatstart;
+            case InputControler.VIRTUAL_JOYSTICK:
+                return CnInputManager.GetAxis("Horizontal");
+            default:
+                Debug.Log("Input controler is unknow : " + inputControler);
+                return 0;
+        }
+    }
+
+    // Get the verticcal movement value from controler
+    private float getHorizontalMovement(InputControler inputControler)
+    {
+        switch (inputControler)
+        {
+            case InputControler.PAD:
+                return Input.GetAxis("Horizontal");
+            case InputControler.ACCELEROMETER:
+			return Input.acceleration.y -yatstart;
+            case InputControler.VIRTUAL_JOYSTICK:
+                return CnInputManager.GetAxis("Vertical");
+            default:
+                Debug.Log("Input controler is unknow : " + inputControler);
+                return 0;
+        }
+    }
+
+	void calibAcelerometer(){
+		xatstart = Input.acceleration.x;
+		yatstart = Input.acceleration.y;
+	}
+
+    // Update is called once per frame
+    void Update ()
+    {
+        // dont play if gameover
+        if(gameover)
+        {
+            return;
+        }
+
         // Update main weapon cooldown
-        if(!mainWeaponCanShoot)
+        if (!mainWeaponCanShoot)
         {
             mainWeaponCooldown -= Time.deltaTime;
             if(mainWeaponCooldown <= 0)
@@ -126,12 +227,12 @@ public class PlayerController : MonoBehaviour, IDamagable {
             superWeaponPowerLevel = Mathf.Min(superWeaponPowerLevel + superWeaponRechargeRate * Time.deltaTime, superWeaponPowerMax);
         }
 
-        if (Input.GetButton("Fire1"))
+        if (Input.GetButton("Fire1") && inputControler != InputControler.VIRTUAL_JOYSTICK)
         {
             FireMain();
         }
 
-        if (Input.GetButtonDown("Fire2"))
+		if (Input.GetButtonDown("Fire2") && inputControler != InputControler.VIRTUAL_JOYSTICK)
         {
             FireSuper();
         }
@@ -165,8 +266,9 @@ public class PlayerController : MonoBehaviour, IDamagable {
         }
     }
 
-    private void FireMain()
+    public void FireMain()
     {
+        Debug.Log("Fire main (mainWeaponCanShoot = " + mainWeaponCanShoot);
         if(!mainWeaponCanShoot || currentShip == null)
         {
             return;
@@ -234,5 +336,18 @@ public class PlayerController : MonoBehaviour, IDamagable {
 
         Destroy(currentShip.gameObject);
         Instantiate(explosion, transform.position, transform.rotation);
+        
     }
+
+    private void Gameover()
+    {
+        gameover = true;
+    }
+
+    enum InputControler
+    {
+        PAD,
+        ACCELEROMETER,
+        VIRTUAL_JOYSTICK
+    };
 }
