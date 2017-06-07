@@ -3,6 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum Team
+{
+    Player,
+    Enemy
+}
+
 public enum GameState
 {
     Starting,
@@ -22,7 +28,10 @@ public class GameController : MonoBehaviour {
 
     // Enemies and Hazards
     [SerializeField]
-    public GameObject hazard;
+    public List<GameObject> hazard;
+
+    [SerializeField]
+    public GameObject enemyShip;
 
     [SerializeField]
     public GameObject spawningVolume;
@@ -69,7 +78,7 @@ public class GameController : MonoBehaviour {
 
             for (int i = 0; i < asteroidNumberPerSpawn * difficultySettings.asteroidSpawnMultiplier; i++)
             {
-                Instantiate(hazard, GenerateSpawnPosition(), Quaternion.identity);
+                Instantiate(hazard[Random.Range(0, hazard.Count)] , GenerateSpawnPosition(), Quaternion.identity);
                 yield return new WaitForSeconds(asteroidTimeBetweenSpawn * difficultySettings.asteroidSpawnTimeMultiplier);
             }
         }
@@ -84,7 +93,7 @@ public class GameController : MonoBehaviour {
 
             for (int i = 0; i < enemyShipNumberPerSpawn * difficultySettings.enemyShipSpawnMultiplier; i++)
             {
-                Instantiate(hazard, GenerateSpawnPosition(), Quaternion.identity);
+                Instantiate(enemyShip, GenerateSpawnPosition(), Quaternion.identity);
                 yield return new WaitForSeconds(enemyShipTimeBetweenSpawn * difficultySettings.asteroidSpawnTimeMultiplier);
             }
         }

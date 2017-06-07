@@ -19,8 +19,8 @@ public class PossessedSlider : MonoBehaviour
     public void UsartValue()
     {
         Debug.Log("Invoking");
-        
-        string bytes = serial.Read();
+        string bytes = null;
+        //string bytes = serial.Read();
         if (!string.IsNullOrEmpty(bytes))
         {
             Debug.Log(bytes);

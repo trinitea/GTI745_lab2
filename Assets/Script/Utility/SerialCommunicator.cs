@@ -1,11 +1,10 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
-using System.IO.Ports;
 
 public class SerialCommunicator : MonoBehaviour // can hinerit from DataStream
 {
-    public string Port = "COM4";
+   /* public string Port = "COM4";
     public int BaudRate = 9600;
 
     private SerialPort SerialIOStream;
@@ -76,5 +75,5 @@ public class SerialCommunicator : MonoBehaviour // can hinerit from DataStream
     public void Close()
     {
         SerialIOStream.Close();
-    }
+    }*/
 }
