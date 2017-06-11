@@ -4,7 +4,11 @@ using UnityEngine;
 
 public class DestroyByContact : MonoBehaviour, IDamagable {
 
-    public int points = 1;
+    public int points;
+
+    public int energy;
+    public int exp;
+
     public ParticleScript explosion;
 
 	void OnTriggerEnter(Collider other)
@@ -30,6 +34,14 @@ public class DestroyByContact : MonoBehaviour, IDamagable {
     public void ReceiveDamage(float damage)
     {
         GameObject.FindGameObjectWithTag("GameController").GetComponent<GameController>().UpdateScore(points);
+
+        PlayerController player = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
+
+        if (player)
+        {
+            player.receiveExp(exp);
+            player.receiveEnergy(energy);
+        }
 
         Instantiate(explosion, transform.position, transform.rotation);
 

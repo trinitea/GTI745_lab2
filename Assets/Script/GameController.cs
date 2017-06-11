@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public enum Team
 {
@@ -55,9 +56,17 @@ public class GameController : MonoBehaviour {
 
     void Start ()
     {
+        if(GameModel.gameDifficulty == Difficulty.Easy)
+        {
+            foreach (GameObject obj in GameObject.FindGameObjectsWithTag("EasyUnavailable"))
+            {
+                obj.SetActive(false);
+            }
+        }
+
         difficultySettings = DifficultySettings.getSettings(GameModel.gameDifficulty);
         gameScore = 0;
-        startSpawn();
+        StartSpawn();
     }
 
     /*
@@ -66,7 +75,7 @@ public class GameController : MonoBehaviour {
 
     }
     */
-    private void startSpawn()
+    private void StartSpawn()
     {
         if (difficultySettings.asteroidShouldSpawn) StartCoroutine("AsteroidSpawnWaves");
         if (difficultySettings.enemyShipShouldSpawn) StartCoroutine("EnemyShipSpawnWaves");
@@ -80,7 +89,7 @@ public class GameController : MonoBehaviour {
 
             for (int i = 0; i < asteroidNumberPerSpawn * difficultySettings.asteroidSpawnMultiplier; i++)
             {
-                Instantiate(hazard[Random.Range(0, hazard.Count)] , GenerateSpawnPosition(), Quaternion.identity);
+                Instantiate(hazard[Random.Range(0, hazard.Count)], GenerateSpawnPosition(), new Quaternion(0.0f, 90.0f, 0.0f, 1.0f));
                 yield return new WaitForSeconds(asteroidTimeBetweenSpawn * difficultySettings.asteroidSpawnTimeMultiplier);
             }
         }
@@ -95,7 +104,7 @@ public class GameController : MonoBehaviour {
 
             for (int i = 0; i < enemyShipNumberPerSpawn * difficultySettings.enemyShipSpawnMultiplier; i++)
             {
-                Instantiate(enemyShip, GenerateSpawnPosition(), Quaternion.identity);
+                Instantiate(enemyShip, GenerateSpawnPosition(), new Quaternion(0.0f, 90.0f, 0.0f, 1.0f));
                 yield return new WaitForSeconds(enemyShipTimeBetweenSpawn * difficultySettings.asteroidSpawnTimeMultiplier);
             }
         }
@@ -114,6 +123,8 @@ public class GameController : MonoBehaviour {
 
     public void UpdateScore(int points)
     {
+        if (points <= 0) return;
+
         gameScore += points;
         textScore.text = gameScore.ToString();
     }
@@ -150,11 +161,13 @@ public class GameController : MonoBehaviour {
             gameScore = 0;
             textScore.text = gameScore.ToString();
 
-            GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>().Respawn(); ;
+            GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>().Respawn();
+
+            StartSpawn();
         }
         else
         {
-            // load
+            SceneManager.LoadScene("MenuScreen");
         }
         
     }

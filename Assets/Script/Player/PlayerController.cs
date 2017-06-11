@@ -41,7 +41,9 @@ public class PlayerController : MonoBehaviour, IDamagable {
     private ParticleScript explosion;
 
     [SerializeField]
-    private Image healthBar;
+    private Image expBar;
+
+    private int currentExp;
 
     [SerializeField]
     private float maxHealth;
@@ -83,7 +85,7 @@ public class PlayerController : MonoBehaviour, IDamagable {
     // Super Weapon
     private float superWeaponPowerLevel;
     private float superWeaponPowerMax = 100.0f;
-    private float superWeaponCost = 0.0f;
+    private float superWeaponCost = 100.0f;
 
     [SerializeField]
     private float superWeaponRechargeRate = 1.0f;
@@ -100,6 +102,9 @@ public class PlayerController : MonoBehaviour, IDamagable {
     [SerializeField]
     private GameObject virtualShootButton;
 
+    public SimpleTouchAreaButton shootAreaButton;
+    public SimpleTouchAreaButton superWeaponAreaButton;
+
 
     // Use this for initialization
     void Start ()
@@ -113,7 +118,7 @@ public class PlayerController : MonoBehaviour, IDamagable {
 
 		SetControler(InputControler.VIRTUAL_JOYSTICK);
         superWeaponPowerLevel = 0.0f;
-
+        
         currentShipIndex = 0;
 
         ChangePlayerState(PlayerState.Spawning); 
@@ -154,7 +159,7 @@ public class PlayerController : MonoBehaviour, IDamagable {
 
 		float speedToApply = inputControler == InputControler.ACCELEROMETER ? speedAccelometer : speed;
 		Debug.Log ("Input selected = " + inputControler + " Speed to apply = " + speedToApply);
-		GetComponent<Rigidbody>().velocity = new Vector3(horizontalMovement, 0.0f, verticalMovement) * speedToApply;
+		GetComponent<Rigidbody>().velocity = new Vector3(horizontalMovement, 0.0f, verticalMovement) * speedToApply * currentShip.speedMultiplier;
 
         GetComponent<Rigidbody>().position = new Vector3
         (
@@ -206,8 +211,7 @@ public class PlayerController : MonoBehaviour, IDamagable {
 		xatstart = Input.acceleration.x;
 		yatstart = Input.acceleration.y;
 	}
-
-    // Update is called once per frame
+    
     void Update ()
     {
         // Update main weapon cooldown
@@ -220,34 +224,67 @@ public class PlayerController : MonoBehaviour, IDamagable {
             }
         }
 
-        // Update super weapon recharge
-        if (superWeaponPowerLevel < superWeaponPowerMax)
-        {
-            superWeaponPowerLevel = Mathf.Min(superWeaponPowerLevel + superWeaponRechargeRate * Time.deltaTime, superWeaponPowerMax);
-        }
-
         if(spawningDuration > 0)
         {
             spawningDuration -= Time.deltaTime;
             if (spawningDuration <= 0) playerState = PlayerState.Alive; 
         }
 
-        if (Input.GetButton("Fire1")/* && inputControler != InputControler.VIRTUAL_JOYSTICK*/)
+        if (false)
         {
-            FireMain();
-        }
+            if (Input.GetButton("Fire1")/* && inputControler != InputControler.VIRTUAL_JOYSTICK*/)
+            {
+                FireMain();
+            }
 
-		if (Input.GetButtonDown("Fire2")/* && inputControler != InputControler.VIRTUAL_JOYSTICK*/)
+            if (Input.GetButtonDown("Fire2")/* && inputControler != InputControler.VIRTUAL_JOYSTICK*/)
+            {
+                FireSuper();
+            }
+        }
+        else
         {
-            FireSuper();
+            if (shootAreaButton.CanFire()) FireMain();
+            if (superWeaponAreaButton.CanFire()) FireSuper();
         }
+        
 
-        // UpdateUi
-        //HealthBar.fillAmount = health / maxHealth 
-        superWeaponBar.fillAmount = superWeaponPowerLevel / superWeaponPowerMax;
     }
 
-    public void Upgrade()
+    public void receiveExp(int exp)
+    {
+        if (exp <= 0 || currentShipIndex == shipComponent.ships.Count - 1) return;
+
+        currentExp += exp;
+
+        if (currentExp >= 20)
+        {
+            Upgrade();
+
+            if(currentShipIndex < shipComponent.ships.Count - 1)
+            {
+                currentExp = 0;
+            }
+        }
+
+        expBar.fillAmount = (float) currentExp / 20;
+    }
+
+    public void receiveEnergy(int energy)
+    {
+        if (energy <= 0 || superWeaponPowerLevel == superWeaponPowerMax) return;
+
+        superWeaponPowerLevel = Mathf.Min(superWeaponPowerLevel + energy, superWeaponPowerMax);
+
+        superWeaponBar.fillAmount = superWeaponPowerLevel / superWeaponPowerMax;
+
+        if(superWeaponPowerLevel >= superWeaponCost)
+        {
+            superWeaponAreaButton.GetComponent<Button>().interactable = true;
+        }
+    }
+
+    private void Upgrade()
     {
         if (currentShipIndex == shipComponent.ships.Count)
         {
@@ -273,6 +310,7 @@ public class PlayerController : MonoBehaviour, IDamagable {
 
     public void Respawn()
     {
+        currentShipIndex = 0;
         ChangePlayerState(PlayerState.Spawning);
     }
 
@@ -285,8 +323,18 @@ public class PlayerController : MonoBehaviour, IDamagable {
             case PlayerState.Spawning:
                 transform.position = new Vector3(0.0f, 0.0f, 2.0f); // put back at origin or put a player spawn object on the scene
                 spawningDuration = 3.0f;
+
                 health = maxHealth;
+
                 GetComponent<MeshCollider>().enabled = true;
+
+                currentExp = 0;
+                expBar.fillAmount = 0.0f;
+
+                superWeaponPowerLevel = 0;
+                superWeaponBar.fillAmount = 0.0f;
+                superWeaponAreaButton.GetComponent<Button>().interactable = false;
+
                 SpawnShip();
                 break;
 
@@ -314,13 +362,12 @@ public class PlayerController : MonoBehaviour, IDamagable {
         {
             return;
         }
-
-        Projectile projectile;
+        
         Vector3 hardpointPosition;
 
         foreach (GameObject hardpoint in currentShip.HardPoints)
         {
-            projectile = Instantiate(laserProjectile, 
+            Instantiate(laserProjectile, 
                     new Vector3(hardpoint.transform.position.x, 0.0f, hardpoint.transform.position.z),
                     new Quaternion(hardpoint.transform.rotation.x, hardpoint.transform.rotation.y, 0.0f, 1.0f)
                 );
@@ -344,6 +391,8 @@ public class PlayerController : MonoBehaviour, IDamagable {
         superWeaponPowerLevel -= superWeaponCost;
 
         superWeapon.Fire();
+
+        superWeaponAreaButton.GetComponent<Button>().interactable = false;
     }
 
     private IEnumerator ExecuteEverithingOnScreen()
