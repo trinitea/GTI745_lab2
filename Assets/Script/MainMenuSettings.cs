@@ -3,28 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum ControllerMode
-{
-    Tactile,
-    Accelerometer,
-    Keyboard,
-    KeyboardAndMouse
-}
-
 public class MainMenuSettings : MonoBehaviour {
-
-    ControllerMode cm;
-    Difficulty difficulty;
-
-    // Use this for initialization
-    void Start()
-    {
-        SelectDifficultySettings(1);    //Tactile
-        ControllerModeSettings(1);      //Easy
-        //cm = ControllerMode.Tactile;
-        //difficulty = Difficulty.Easy;
-
-    }
 
     //Difficulty Buttons
     public Button EasyButton;
@@ -36,12 +15,53 @@ public class MainMenuSettings : MonoBehaviour {
     public Button TactileButton;
     public Button AccelerometerButton;
 
+    // Accelerometer
+    public Slider AccelerometerSlider;
+
+    // Use this for initialization
+    void Start()
+    {
+        switch (GameModel.gameDifficulty)
+        {
+            case Difficulty.Easy:
+                SelectDifficultySettings(1);
+                break;
+
+            case Difficulty.Normal:
+                SelectDifficultySettings(2);
+                break;
+
+            default:
+                SelectDifficultySettings(3);
+                break;
+        }
+
+        switch(GameModel.controllerMode)
+        {
+            case InputController.VIRTUAL_JOYSTICK:
+                ControllerModeSettings(1);
+                break;
+
+            case InputController.PAD:
+                ControllerModeSettings(2);
+                break;
+
+            default:
+                ControllerModeSettings(3);
+                break;
+        }
+
+        AccelerometerSlider.value = GameModel.accelerometerSensitivity;
+    }
 
     public void SelectDifficultySettings(int diffSettings)
     {
         EasyButton.interactable = true;
         NormalButton.interactable = true;
         HardButton.interactable = true;
+
+        Difficulty difficulty = Difficulty.Easy;
+
         switch (diffSettings)
         {
             case 1:
@@ -58,12 +78,8 @@ public class MainMenuSettings : MonoBehaviour {
                 difficulty = Difficulty.Hard;
                 HardButton.interactable = false;
                 break;
-                /*
-            case 4:
-                difficulty = Difficulty.Impossibru;
-                break;
-                */
         }
+
         GameModel.gameDifficulty = difficulty;
     }
 
@@ -73,27 +89,38 @@ public class MainMenuSettings : MonoBehaviour {
     {
         TactileButton.interactable = true;
         AccelerometerButton.interactable = true;
+
+        InputController controller = InputController.VIRTUAL_JOYSTICK;
+
         switch (controllerSettings)
         {
             case 1:
-                cm = ControllerMode.Tactile;
+                controller = InputController.VIRTUAL_JOYSTICK;
                 TactileButton.interactable = false;
                 break;
 
             case 2:
-                cm = ControllerMode.Accelerometer;
+                controller = InputController.PAD;
+                TactileButton.interactable = false;
+                break;
+
+            case 3:
+                controller = InputController.ACCELEROMETER;
                 AccelerometerButton.interactable = false;
                 break;
-                /*
-            case 3:
-                cm = ControllerMode.Keyboard;
-                break;
-                /*
-            case 4:
-                cm = ControllerMode.KeyboardAndMouse;
-                break;
-                */
         }
-        GameModel.controllerMode = cm;
+
+        GameModel.controllerMode = controller;
+    }
+
+    public void CalibrateAccelerometer()
+    {
+        GameModel.accelerometerXAtStart = Input.acceleration.x;
+        GameModel.accelerometerYAtStart = Input.acceleration.y;
+    }
+
+    public void SetAccelerometerSensitivity()
+    {
+        GameModel.accelerometerSensitivity = AccelerometerSlider.value;
     }
 }
